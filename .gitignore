@@ -32,8 +32,8 @@
 *.app
 
 # JetBrains files
-"Rubik's Cube Solver/Python/.idea/"
-"Rubik's Cube Solver/Python/Rubics Cube Solver/"
+Rubik's\ Cube\ Solver/Python/.idea/
+Rubik's\ Cube\ Solver/Python/Rubics\ Cube\ Solver/
 
 # Compiled Python Files
 *.pyc
