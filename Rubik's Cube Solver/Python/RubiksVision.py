@@ -1,14 +1,17 @@
 import numpy as np
 import cv2
 import traceback
+from defs import *
 from RubiksCube import *
 from PointDetection import *
 from VideoManager import *
 
-videoman = VideoManager(source_1=1, source_2=None, windowname_1="Cam 1", windowname_2="Cam 2")
+videoman = VideoManager(source_1=0, source_2=None, windowname_1="Cam 1", windowname_2="Cam 2")
 pointdet = PointDetection(videomanager=videoman, points_file="data/points.json", colors_file="data/colors.json")
 cube = RubiksCube()
 
+videoman.add_pre_processor(np.flipud, 1)
+videoman.add_pre_processor(np.fliplr, Constants.ALL_WINDOWS)
 
 def parse_keyboard(key_stroke):
     if key_stroke == ord('w'):

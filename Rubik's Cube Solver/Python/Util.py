@@ -1,5 +1,6 @@
 import json
 import cv2
+import os
 import numpy as np
 from defs import *
 
@@ -38,7 +39,10 @@ def bgr_to_hsv(color):
 
 
 def color_distance(a, b):
-    return np.linalg.norm(np.array(a)-np.array(b))
+    return np.linalg.norm(
+        np.array(a)/np.linalg.norm(a)
+        - np.array(b)/np.linalg.norm(b)
+    )
 
 
 def generate_keys():
@@ -50,11 +54,26 @@ def generate_keys():
     return facelets, faces
 
 
+# def check_file(filename):
+#     try:
+#         f = open(filename)
+#     except IOError:
+#
+
+
 def read_file(filename):
-    data = []
-    with open(filename, 'rt') as f:
-        data = json.load(f)
-    return data
+    data = {}
+    try:
+        with open(filename, 'rt') as f:
+            data = json.load(f)
+    except IOError:
+        print("No data files found at {}, initializing data".format(filename))
+        directory = os.path.dirname(filename)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        open(filename, 'w')
+    finally:
+        return data
 
 
 def write_file(filename, data):

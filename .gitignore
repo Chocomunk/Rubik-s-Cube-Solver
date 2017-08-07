@@ -35,5 +35,9 @@
 Rubik's\ Cube\ Solver/Python/.idea/
 Rubik's\ Cube\ Solver/Python/Rubics\ Cube\ Solver/
 
+# Data and miscelaneous folder
+Rubik's\ Cube\ Solver/Python/data/
+Rubik's\ Cube\ Solver/Python/misc/
+
 # Compiled Python Files
 *.pyc

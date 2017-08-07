@@ -174,12 +174,11 @@ class PointDetection:
             self.points = dict.fromkeys(self.facelets)
             Util.write_file(self.points_file, self.points)
         if self.detection_state is DetectionState.COLORS:
-            for key in self.faces:
-                self.colors[key] = {}
-                self.colors[key][ColorData.LOWER_BOUND] = None
-                self.colors[key][ColorData.UPPER_BOUND] = None
-                self.colors[key][ColorData.AVERAGE_COLOR] = None
-                self.colors[key][ColorData.POINTS] = []
+            self.colors[self.faces[self.curr_face_index]] = {}
+            self.colors[self.faces[self.curr_face_index]][ColorData.LOWER_BOUND] = None
+            self.colors[self.faces[self.curr_face_index]][ColorData.UPPER_BOUND] = None
+            self.colors[self.faces[self.curr_face_index]][ColorData.AVERAGE_COLOR] = None
+            self.colors[self.faces[self.curr_face_index]][ColorData.POINTS] = []
             Util.write_file(self.colors_file, self.colors)
 
     def write_data(self):
