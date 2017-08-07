@@ -1,3 +1,6 @@
+/*
+ * Creates functions to find subsequent movement on the opposite side
+ */
 struct Move {
 	
 public:

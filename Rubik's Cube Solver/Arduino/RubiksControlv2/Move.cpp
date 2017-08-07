@@ -1,3 +1,6 @@
+/*
+ * Source file for functions to find subsequent opposite movement
+ */
 #include "Move.h";
 char* oppositeboi[] = {"uUvdDe", "lLmrRs", "fFgbBc"};
 
