@@ -86,6 +86,8 @@ void setup() {
     StepperArray[number]->setMaxSpeed(rpm);
     StepperArray[number]->setAcceleration(9999999999);
   }
+
+  Serial.println("Started Up");
 }
 
 void loop() {
@@ -104,7 +106,7 @@ void loop() {
    input.replace("L'", "l");
    input.replace("R'", "r");
    input.replace("F'", "f");
-   input.replace("B'", "B");
+   input.replace("B'", "b");
    input.replace(" ", "");
    inputlength=input.length();
    Serial.println(String("input:")+String(input)+String("\tlength:")+String(inputlength));
@@ -112,9 +114,9 @@ void loop() {
  for(int inputIndex=0; inputIndex<inputlength; inputIndex=inputIndex+1){
   type= input.charAt(inputIndex);
   type2= input.charAt(inputIndex+1);
-  Serial.print(String("type:")+String(type)+String("\ttype2:")+String(type2));
+  Serial.print(String("type:")+char(type)+String("\ttype2:")+char(type2));
   Move m1(type);
-  Move m2(type2);
+  Move m2(type2); 
   boolean opposite=Move::isOpposite(m1,m2);
   Serial.println(String("\topposite:")+String(opposite));
   int MotorNum;
@@ -139,13 +141,13 @@ void loop() {
 }
 void RunMotor(int motor, int rotation) {
   if(rotation == 1) {
-      StepperArray[motor]->moveTo(StepperArray[motor]->currentPosition()+50);
+      StepperArray[motor]->moveTo(StepperArray[motor]->currentPosition()+52);
   }
   else if(rotation == 0) {
-      StepperArray[motor]->moveTo(StepperArray[motor]->currentPosition()-50);
+      StepperArray[motor]->moveTo(StepperArray[motor]->currentPosition()-52);
   }
   else if(rotation == 2) {
-      StepperArray[motor]->moveTo(StepperArray[motor]->currentPosition()-100);
+      StepperArray[motor]->moveTo(StepperArray[motor]->currentPosition()-104);
   }
   while(StepperArray[motor]->distanceToGo()!=0){
       StepperArray[motor]->run();
@@ -155,23 +157,23 @@ void RunMotor(int motor, int rotation) {
 
 void SimulMotor(int motor1, int motor2, int rotation1, int rotation2) {
   if(rotation1 == 1) {
-    StepperArray[motor1]->moveTo(StepperArray[motor1]->currentPosition()+50); 
+    StepperArray[motor1]->moveTo(StepperArray[motor1]->currentPosition()+52); 
   }
   else if(rotation1 == 0) {
-    StepperArray[motor1]->moveTo(StepperArray[motor1]->currentPosition()-50); 
+    StepperArray[motor1]->moveTo(StepperArray[motor1]->currentPosition()-52); 
   }
   else if(rotation1 == 2) {
-    StepperArray[motor1]->moveTo(StepperArray[motor1]->currentPosition()-100);
+    StepperArray[motor1]->moveTo(StepperArray[motor1]->currentPosition()-104);
   }
   
   if(rotation2 == 1) {
-    StepperArray[motor2]->moveTo(StepperArray[motor2]->currentPosition()+50); 
+    StepperArray[motor2]->moveTo(StepperArray[motor2]->currentPosition()+52); 
   }
   else if(rotation2 == 0) {
-    StepperArray[motor2]->moveTo(StepperArray[motor2]->currentPosition()-50); 
+    StepperArray[motor2]->moveTo(StepperArray[motor2]->currentPosition()-52); 
   }
   else if(rotation2 == 2) {
-    StepperArray[motor2]->moveTo(StepperArray[motor2]->currentPosition()-100); 
+    StepperArray[motor2]->moveTo(StepperArray[motor2]->currentPosition()-104); 
   }
   while(StepperArray[motor1]->distanceToGo()!=0 || StepperArray[motor2]->distanceToGo()!=0){
       StepperArray[motor1]->run();
@@ -180,7 +182,7 @@ void SimulMotor(int motor1, int motor2, int rotation1, int rotation2) {
   type=0;
 }
 void FindMotorAndRotation(char inputmove, int &MotorNumber, int &RotationNumber) {
-  char* movearray[]= {"UDLRFB","udlrfb","vemsgc"};
+  String movearray[]= {"UDLRFB","udlrfb","vemsgc"};
   bool complete= false;
   int movearrayIndex=0;
   int movearrayList=0;

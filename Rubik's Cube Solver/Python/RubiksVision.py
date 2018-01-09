@@ -10,7 +10,7 @@ videoman = VideoManager(source_1=0, source_2=None, windowname_1="Cam 1", windown
 pointdet = PointDetection(videomanager=videoman, points_file="data/points.json", colors_file="data/colors.json")
 cube = RubiksCube()
 
-videoman.add_pre_processor(np.flipud, 1)
+# videoman.add_pre_processor(np.flipud, 1)
 videoman.add_pre_processor(np.fliplr, Constants.ALL_WINDOWS)
 
 def parse_keyboard(key_stroke):

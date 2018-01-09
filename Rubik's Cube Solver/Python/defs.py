@@ -2,6 +2,7 @@
 class Constants():
     BLUE = (255,0,0); GREEN = (0,255,0); RED = (0,0,255)
     ALL_WINDOWS = -1
+    JSON_ENCODER_INDENT_NESTED_LISTS = False
 
 
 class CubeData():
@@ -9,7 +10,7 @@ class CubeData():
 
 
 class ColorData():
-    LOWER_BOUND = 'lower_bound'; UPPER_BOUND = 'upper_bound'; POINTS = 'points'; AVERAGE_COLOR = 'average_color'
+    LOWER_BOUND = 'lower_bound'; UPPER_BOUND = 'upper_bound'; COLOR_POINTS = 'color_points'; AVERAGE_COLOR = 'average_color'
     NULL_COLOR = 'Null'; NULL_COLOR_DISTANCE = -1
 
 

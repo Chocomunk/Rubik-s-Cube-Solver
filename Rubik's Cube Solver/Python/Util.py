@@ -94,7 +94,7 @@ class NoListIndentJSONEncoder(json.JSONEncoder):
                 list_lvl += 1
                 s = s.replace('\n', '').rstrip()
                 s = s.replace(' ', '')
-                if last_was_open_bracket or last_was_close_bracket:
+                if Constants.JSON_ENCODER_INDENT_NESTED_LISTS and (last_was_open_bracket or last_was_close_bracket):
                     s = '\n' + last_indent_width*' ' + s
                 last_was_open_bracket = True
                 last_was_close_bracket = False
@@ -112,7 +112,7 @@ class NoListIndentJSONEncoder(json.JSONEncoder):
                     last_was_open_bracket = False
             if s.endswith(']'):
                 list_lvl -= 1
-                if last_was_close_bracket:
+                if Constants.JSON_ENCODER_INDENT_NESTED_LISTS and (last_was_close_bracket):
                     s = '\n' + last_indent_width*' ' + s
                 last_was_open_bracket = False
                 last_was_close_bracket = True
