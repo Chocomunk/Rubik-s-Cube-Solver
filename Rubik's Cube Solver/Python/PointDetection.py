@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 import Util
-import copy
 from defs import *
 
 
@@ -107,6 +106,12 @@ class PointDetection:
         self.detection_state = (self.detection_state + 1) % DetectionState.size
 
     def update(self):
+        """
+        Called every update of the program
+
+        Draws onto the image frame and returns
+        the frame to the video manager for display
+        """
         ret, frames = self.videomanager.get_frame()
 
         draw_set = None
@@ -121,26 +126,39 @@ class PointDetection:
         self.videomanager.set_frame(frames[0], frames[1])
 
     def apply_facelet_points(self, ret, frames):
+        """
+        Determines all facelet elements that should be drawn onto the view frames
+        :param ret: Boolean list representing the status of each frame
+        :param frames: List of each frame
+        :return: A list of all elements to draw onto the frames
+        """
         draw_set = []
         all_points_set = True
         self.isCompleteCube = True
-        for facelet, point in self.points.items():
-            if not point:
+
+        for facelet, point in self.points.items():  # Loop through every key and value in the dict
+            if not point:   # If a point is not filled in, the virtual representation is not complete
                 all_points_set = False
                 self.isCompleteCube = False
                 continue
+
+            # Color current facelet point differently
             text_color = Constants.BLUE if facelet == self.facelets[self.curr_facelet_index] else Constants.GREEN
             x, y, window_num = int(point[0]), int(point[1]), point[2]-1
-            if ret[window_num]:
+
+            if ret[window_num]:     # If this window is active
                 value = self.get_color(frames[window_num][y, x])
-                if ColorData.NULL_COLOR in value: self.isCompleteCube = False
+                if ColorData.NULL_COLOR in value:
+                    self.isCompleteCube = False
                 self.colors_state[facelet] = value
 
+                # Add points and labels to the draw set
                 draw_set.append((window_num,
                                  (" {}: {}".format(facelet, value), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.3, text_color),
                                  ((x, y), 1, text_color, 3)
                                  ))
 
+        # Show name of current facelet
         draw_set.append((Constants.ALL_WINDOWS,
                         (self.facelets[self.curr_facelet_index], (580, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.3,
                             Constants.BLUE if all_points_set
@@ -151,42 +169,57 @@ class PointDetection:
         return draw_set
 
     def apply_color_points(self, ret, frames):
+        """
+        Determines all color elements that should be drawn onto the view frames
+        :param ret: Boolean list representing the status of each frame
+        :param frames: List of each frame
+        :return: A list of all elements to draw onto the frames
+        """
         lower_bound = self.colors[self.faces[self.curr_face_index]][ColorData.LOWER_BOUND]
         upper_bound = self.colors[self.faces[self.curr_face_index]][ColorData.UPPER_BOUND]
         average_color = self.colors[self.faces[self.curr_face_index]][ColorData.AVERAGE_COLOR]
 
         draw_set = []
-        if len(self.colors_queue):
+        if len(self.colors_queue):  # If the colors queue has elements
+            # Pop one point and extract data from that point
+            # Note: Only one point is popped every update cycle
             point = self.colors_queue.pop(0)
             x, y, window_num, p_face = int(point[0]), int(point[1]), point[2]-1, point[3]
 
-            if ret[window_num]:
+            if ret[window_num]:     # If this window is active
                 value = frames[window_num][y, x]
 
+                # Add point to stored list and retrieve bounds
                 self.colors[p_face][ColorData.COLOR_POINTS].append([e.item() for e in value])
                 p_lower = self.colors[p_face][ColorData.LOWER_BOUND]
                 p_upper = self.colors[p_face][ColorData.UPPER_BOUND]
 
+                # If there are no bounds, default bounds to current point
                 if p_lower is None: p_lower = [e.item() for e in value]
                 if p_upper is None: p_upper = [e.item() for e in value]
 
+                # If this point exceeds the bounds, update the bounds
                 for i in range(len(value)):
                     if value[i] < p_lower[i]:
                         p_lower[i] = value[i].item()
                     if value[i] > p_upper[i]:
                         p_upper[i] = value[i].item()
 
+                # Store updated bound
                 self.colors[p_face][ColorData.LOWER_BOUND] = p_lower
                 self.colors[p_face][ColorData.UPPER_BOUND] = p_upper
 
+            # Calculate average
             color_points = np.array(self.colors[p_face][ColorData.COLOR_POINTS])
             if color_points.any():
                 p_average_color = sum(color_points)/len(color_points)
                 self.colors[p_face][ColorData.AVERAGE_COLOR] = [e.item() for e in p_average_color]
 
+        # Default average color to RED (wont affect actual average, just the text color)
         if average_color is None:
             average_color = list(Constants.RED)
 
+        # Add the face name to the draw set (colored to the average)
         draw_set.append((Constants.ALL_WINDOWS,
                          ("{}: {} {}".format(self.faces[self.curr_face_index], lower_bound, upper_bound),
                           (40,40), cv2.FONT_HERSHEY_SIMPLEX, .5, average_color),
@@ -195,6 +228,14 @@ class PointDetection:
         return draw_set
 
     def on_mouse(self, event, x, y, flags, window_num):
+        """
+        Callback for mouse events
+        :param event: Received mouse event
+        :param x: X position of the mouse during the event
+        :param y: Y position of the mouse during the event
+        :param flags: Passed flags
+        :param window_num: The number of the window in which the event occupied
+        """
         if self.detection_state is DetectionState.FACELETS:
             if event == cv2.EVENT_LBUTTONDOWN:
                 self.points[self.facelets[self.curr_facelet_index]] = (x, y, window_num)
@@ -214,6 +255,9 @@ class PointDetection:
                 self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_POINTS] = []
 
     def clear_data(self):
+        """
+        Clears all program and saved data
+        """
         if self.detection_state is DetectionState.FACELETS:
             self.points = dict.fromkeys(self.facelets)
             Util.write_file(self.points_file, self.points)
@@ -228,6 +272,9 @@ class PointDetection:
             Util.write_file(self.colors_file, self.colors)
 
     def write_data(self):
+        """
+        Writes all color and facelet data to a file.
+        """
         if self.detection_state is DetectionState.FACELETS:
             Util.write_file(self.points_file, self.points)
         if self.detection_state is DetectionState.COLORS:
