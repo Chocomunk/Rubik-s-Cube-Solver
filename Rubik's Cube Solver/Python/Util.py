@@ -40,8 +40,14 @@ def bgr_to_hsv(color):
 
 def color_distance(a, b):
     return np.linalg.norm(
-        np.array(a)/np.linalg.norm(a)
-        - np.array(b)/np.linalg.norm(b)
+        a/np.linalg.norm(a)
+        - b/np.linalg.norm(b)
+    )
+
+
+def zscore(mean, stddev, sample):
+    return np.linalg.norm(
+        (sample - mean)/stddev
     )
 
 
@@ -82,6 +88,7 @@ def color_set_list_to_numpy(faces, color_set):
             color_set[face][ColorData.COLOR_MEAN] = np.array(color_set[face][ColorData.COLOR_MEAN])
             color_set[face][ColorData.COLOR_STD_DEV] = np.array(color_set[face][ColorData.COLOR_STD_DEV])
             color_set[face][ColorData.COLOR_VARIANCE] = np.array(color_set[face][ColorData.COLOR_VARIANCE])
+    return color_set
 
 
 def color_set_numpy_to_list(faces, color_set):
@@ -94,6 +101,7 @@ def color_set_numpy_to_list(faces, color_set):
                 color_set[face][ColorData.COLOR_STD_DEV] = [e.item() for e in color_set[face][ColorData.COLOR_STD_DEV]]
             if type(color_set[face][ColorData.COLOR_VARIANCE]) == np_array_type:
                 color_set[face][ColorData.COLOR_VARIANCE] = [e.item() for e in color_set[face][ColorData.COLOR_VARIANCE]]
+    return color_set
 
 
 def write_file(filename, data):

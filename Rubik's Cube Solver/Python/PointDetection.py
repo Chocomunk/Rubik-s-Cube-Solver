@@ -61,28 +61,24 @@ class PointDetection:
         :return: A list of possible faces (colors) that this facelet could be. The list is sorted by which face's
                  average that this color is closest to.
         """
-        matching_colors = []
+        zscores = []
         for color, data in self.colors.items():     # loop through every face
 
-            # if this face has color data, then try to determine the list of possible faces
-            if data[ColorData.COLOR_POINTS] is not None and len(data[ColorData.COLOR_POINTS]) > 0:
-                matches_curr_color = True
-
-                # loop through every value of the point_color and check whether it is within the face's bounds
-                for i in range(len(point_color)):
-                    matches_curr_color = (matches_curr_color and
-                                          data[ColorData.LOWER_BOUND][i] <= point_color[i] <= data[ColorData.UPPER_BOUND][i])
-
-                # if the bounds are met, add the distance from this point_color to the face's average color
-                if matches_curr_color:
-                    matching_colors.append((color, Util.color_distance(point_color, data[ColorData.AVERAGE_COLOR])))
+            # if this face has color data, then calculate the z-score
+            if data[ColorData.COLOR_SET_SIZE]:
+                if data[ColorData.COLOR_SET_SIZE] > 0:
+                    zscores.append((color, Util.zscore(
+                        data[ColorData.COLOR_MEAN],
+                        data[ColorData.COLOR_STD_DEV],
+                        point_color
+                    )))
 
         # if no faces match, default to a predefined null_color value
-        if not matching_colors:
-            matching_colors.append((ColorData.NULL_COLOR, ColorData.NULL_COLOR_DISTANCE))
+        if not zscores:
+            zscores.append((ColorData.NULL_COLOR, ColorData.NULL_COLOR_DISTANCE))
 
         # return the face labels sorted by their distance to this point_color
-        return [e[0] for e in sorted(matching_colors, key=lambda matching_color: matching_color[1])]
+        return [e[0] for e in sorted(zscores, key=lambda x: x[1]*x[1])]
 
     def cycle_state_variable(self, step):
         """
@@ -198,7 +194,11 @@ class PointDetection:
                     set_size += 1
                 else:   # There are elements registered, update statistical data
                     new_mean = (value + mean*set_size)/(set_size + 1)
-                    variance = (((set_size-1)*variance) + (value-mean)*(value-new_mean)) / set_size
+                    if set_size>2:
+                        variance = (((set_size-1)*variance) + (value-mean)*(value-new_mean)) / set_size
+                    else:   # Only occurs when set_size = 2
+                        # Initialize variance calculation for 2 data points
+                        variance = ((value-mean) ** 2 + (value-new_mean) ** 2)
                     mean = new_mean
                     stddev = np.sqrt(variance)
                     set_size += 1
@@ -270,4 +270,6 @@ class PointDetection:
         if self.detection_state is DetectionState.FACELETS:
             Util.write_file(self.points_file, self.points)
         if self.detection_state is DetectionState.COLORS:
-            Util.write_file(Util.color_set_numpy_to_list(self.faces, self.colors_file), self.colors)
+            Util.color_set_numpy_to_list(self.faces, self.colors)
+            Util.write_file(self.colors_file, self.colors)
+            Util.color_set_list_to_numpy(self.faces, self.colors)
