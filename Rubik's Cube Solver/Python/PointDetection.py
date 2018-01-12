@@ -46,6 +46,8 @@ class PointDetection:
             self.detection_state = DetectionState.COLORS
             self.clear_data()
             self.detection_state = DetectionState.FACELETS
+        else:   # Set list types to numpy arrays
+            Util.color_set_list_to_numpy(self.faces, self.colors)
 
         # Video manager mouse callback. Allows this object to control what happens during mouse presses
         self.videomanager.set_mouse_callback(self.on_mouse)
@@ -175,9 +177,10 @@ class PointDetection:
         :param frames: List of each frame
         :return: A list of all elements to draw onto the frames
         """
-        lower_bound = self.colors[self.faces[self.curr_face_index]][ColorData.LOWER_BOUND]
-        upper_bound = self.colors[self.faces[self.curr_face_index]][ColorData.UPPER_BOUND]
-        average_color = self.colors[self.faces[self.curr_face_index]][ColorData.AVERAGE_COLOR]
+        mean = self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_MEAN]
+        variance = self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_VARIANCE]
+        set_size = self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_SET_SIZE]
+        stddev = np.zeros(3)  # To be populated later, we only care about variance here
 
         draw_set = []
         if len(self.colors_queue):  # If the colors queue has elements
@@ -189,41 +192,32 @@ class PointDetection:
             if ret[window_num]:     # If this window is active
                 value = frames[window_num][y, x]
 
-                # Add point to stored list and retrieve bounds
-                self.colors[p_face][ColorData.COLOR_POINTS].append([e.item() for e in value])
-                p_lower = self.colors[p_face][ColorData.LOWER_BOUND]
-                p_upper = self.colors[p_face][ColorData.UPPER_BOUND]
+                if not set_size:    # No elements registered to the color set yet
+                    mean = value
+                    variance = np.zeros(3)
+                    set_size += 1
+                else:   # There are elements registered, update statistical data
+                    new_mean = (value + mean*set_size)/(set_size + 1)
+                    variance = (((set_size-1)*variance) + (value-mean)*(value-new_mean)) / set_size
+                    mean = new_mean
+                    stddev = np.sqrt(variance)
+                    set_size += 1
 
-                # If there are no bounds, default bounds to current point
-                if p_lower is None: p_lower = [e.item() for e in value]
-                if p_upper is None: p_upper = [e.item() for e in value]
-
-                # If this point exceeds the bounds, update the bounds
-                for i in range(len(value)):
-                    if value[i] < p_lower[i]:
-                        p_lower[i] = value[i].item()
-                    if value[i] > p_upper[i]:
-                        p_upper[i] = value[i].item()
-
-                # Store updated bound
-                self.colors[p_face][ColorData.LOWER_BOUND] = p_lower
-                self.colors[p_face][ColorData.UPPER_BOUND] = p_upper
-
-            # Calculate average
-            color_points = np.array(self.colors[p_face][ColorData.COLOR_POINTS])
-            if color_points.any():
-                p_average_color = sum(color_points)/len(color_points)
-                self.colors[p_face][ColorData.AVERAGE_COLOR] = [e.item() for e in p_average_color]
+                # Set the values in the dictionary
+                self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_MEAN] = mean
+                self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_STD_DEV] = stddev
+                self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_VARIANCE] = variance
+                self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_SET_SIZE] = set_size
 
         # Default average color to RED (wont affect actual average, just the text color)
-        if average_color is None:
-            average_color = list(Constants.RED)
+        if mean is None:
+            mean = np.array(list(Constants.RED))
 
         # Add the face name to the draw set (colored to the average)
         draw_set.append((Constants.ALL_WINDOWS,
-                         ("{}: {} {}".format(self.faces[self.curr_face_index], lower_bound, upper_bound),
-                          (40,40), cv2.FONT_HERSHEY_SIMPLEX, .5, average_color),
-                         ((25,35), 3, average_color, 5)
+                         ("{}: {} {}".format(self.faces[self.curr_face_index], mean, stddev),
+                          (40,40), cv2.FONT_HERSHEY_SIMPLEX, .5, [e.item() for e in mean]),
+                         ((25,35), 3, [e.item() for e in mean], 5)
                          ))
         return draw_set
 
@@ -245,14 +239,12 @@ class PointDetection:
 
         if self.detection_state is DetectionState.COLORS:
             if event == cv2.EVENT_LBUTTONDOWN:
-                if not self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_POINTS]:
-                    self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_POINTS] = []
                 self.colors_queue.append((x, y, window_num, self.faces[self.curr_face_index]))
             if event == cv2.EVENT_RBUTTONDOWN:
-                self.colors[self.faces[self.curr_face_index]][ColorData.LOWER_BOUND] = None
-                self.colors[self.faces[self.curr_face_index]][ColorData.UPPER_BOUND] = None
-                self.colors[self.faces[self.curr_face_index]][ColorData.AVERAGE_COLOR] = None
-                self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_POINTS] = []
+                self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_MEAN] = None
+                self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_STD_DEV] = None
+                self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_VARIANCE] = None
+                self.colors[self.faces[self.curr_face_index]][ColorData.COLOR_SET_SIZE] = 0
 
     def clear_data(self):
         """
@@ -265,10 +257,10 @@ class PointDetection:
             print(self.colors)
             for face in self.faces:
                 self.colors[face] = {}
-                self.colors[face][ColorData.LOWER_BOUND] = None
-                self.colors[face][ColorData.UPPER_BOUND] = None
-                self.colors[face][ColorData.AVERAGE_COLOR] = None
-                self.colors[face][ColorData.COLOR_POINTS] = []
+                self.colors[face][ColorData.COLOR_MEAN] = None
+                self.colors[face][ColorData.COLOR_STD_DEV] = None
+                self.colors[face][ColorData.COLOR_VARIANCE] = None
+                self.colors[face][ColorData.COLOR_SET_SIZE] = 0
             Util.write_file(self.colors_file, self.colors)
 
     def write_data(self):
@@ -278,4 +270,4 @@ class PointDetection:
         if self.detection_state is DetectionState.FACELETS:
             Util.write_file(self.points_file, self.points)
         if self.detection_state is DetectionState.COLORS:
-            Util.write_file(self.colors_file, self.colors)
+            Util.write_file(Util.color_set_numpy_to_list(self.faces, self.colors_file), self.colors)

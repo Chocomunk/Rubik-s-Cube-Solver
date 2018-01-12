@@ -10,7 +10,9 @@ class CubeData():
 
 
 class ColorData():
-    LOWER_BOUND = 'lower_bound'; UPPER_BOUND = 'upper_bound'; COLOR_POINTS = 'color_points'; AVERAGE_COLOR = 'average_color'
+    # LOWER_BOUND = 'lower_bound'; UPPER_BOUND = 'upper_bound'; COLOR_POINTS = 'color_points'; AVERAGE_COLOR = 'average_color'
+    COLOR_MEAN = 'color_mean'; COLOR_STD_DEV = 'color_std_dev'; COLOR_VARIANCE = 'color_variance';
+    COLOR_SET_SIZE = 'color_set_size'
     NULL_COLOR = 'Null'; NULL_COLOR_DISTANCE = -1
 
 

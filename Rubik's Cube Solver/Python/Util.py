@@ -76,6 +76,26 @@ def read_file(filename):
         return data
 
 
+def color_set_list_to_numpy(faces, color_set):
+    for face in faces:
+        if color_set[face][ColorData.COLOR_SET_SIZE]:
+            color_set[face][ColorData.COLOR_MEAN] = np.array(color_set[face][ColorData.COLOR_MEAN])
+            color_set[face][ColorData.COLOR_STD_DEV] = np.array(color_set[face][ColorData.COLOR_STD_DEV])
+            color_set[face][ColorData.COLOR_VARIANCE] = np.array(color_set[face][ColorData.COLOR_VARIANCE])
+
+
+def color_set_numpy_to_list(faces, color_set):
+    np_array_type = type(np.zeros(0))
+    for face in faces:
+        if color_set[face][ColorData.COLOR_SET_SIZE]:
+            if type(color_set[face][ColorData.COLOR_MEAN]) == np_array_type:
+                color_set[face][ColorData.COLOR_MEAN] = [e.item() for e in color_set[face][ColorData.COLOR_MEAN]]
+            if type(color_set[face][ColorData.COLOR_STD_DEV]) == np_array_type:
+                color_set[face][ColorData.COLOR_STD_DEV] = [e.item() for e in color_set[face][ColorData.COLOR_STD_DEV]]
+            if type(color_set[face][ColorData.COLOR_VARIANCE]) == np_array_type:
+                color_set[face][ColorData.COLOR_VARIANCE] = [e.item() for e in color_set[face][ColorData.COLOR_VARIANCE]]
+
+
 def write_file(filename, data):
     with open(filename, 'w+') as f:
         json.dump(data, f, sort_keys=True, indent=4, cls=NoListIndentJSONEncoder)
