@@ -21,18 +21,27 @@ class VideoManager:
         cv2.setMouseCallback(self.windowname_1, callback, 1)
         cv2.setMouseCallback(self.windowname_2, callback, 2)
 
-    def add_pre_processor(self, processor, window_num):
-        self.pre_processors.append((window_num, processor))
+    def add_pre_processor(self, processor, window_num, *flags):
+        self.pre_processors.append((window_num, processor, flags))
 
-    def add_post_processor(self, processor, window_num):
-        self.post_processors.append((window_num, processor))
+    def add_post_processor(self, processor, window_num, *flags):
+        self.post_processors.append((window_num, processor, flags))
 
     def apply_processors(self, processors):
-        for window_num, processor in processors:
+        temp = None
+        for window_num, processor, flags in processors:
             if self.ret_1 and (window_num is 1 or window_num is Constants.ALL_WINDOWS):
-                self.frame_1 = processor(self.frame_1).copy()
+                if flags and len(flags):
+                    temp = processor(self.frame_1, *flags)
+                else:
+                    temp = processor(self.frame_1)
+                self.frame_1 = temp.copy()
             if self.ret_2 and (window_num is 2 or window_num is Constants.ALL_WINDOWS):
-                self.frame_2 = processor(self.frame_2).copy()
+                if flags and len(flags):
+                    temp = processor(self.frame_2, *flags)
+                else:
+                    temp = processor(self.frame_2)
+                self.frame_2 = temp.copy()
 
     def get_frame(self):
         return (self.ret_1, self.ret_2), (self.frame_1, self.frame_2)

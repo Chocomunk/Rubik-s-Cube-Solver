@@ -64,20 +64,19 @@ class PointDetection:
         zscores = []
         for color, data in self.colors.items():     # loop through every face
 
-            # if this face has color data, then calculate the z-score
-            if data[ColorData.COLOR_SET_SIZE]:
-                if data[ColorData.COLOR_SET_SIZE] > 0:
-                    zscores.append((color, Util.zscore(
-                        data[ColorData.COLOR_MEAN],
-                        data[ColorData.COLOR_STD_DEV],
-                        point_color
-                    )))
+            # if this face has at least 3 color samples, then calculate the z-score
+            if data[ColorData.COLOR_SET_SIZE] and data[ColorData.COLOR_SET_SIZE] > 2:
+                zscores.append((color, Util.zscore(
+                    data[ColorData.COLOR_MEAN],
+                    data[ColorData.COLOR_STD_DEV],
+                    point_color
+                )))
 
         # if no faces match, default to a predefined null_color value
         if not zscores:
             zscores.append((ColorData.NULL_COLOR, ColorData.NULL_COLOR_DISTANCE))
 
-        # return the face labels sorted by their distance to this point_color
+        # return the face labels sorted by their z-score magnitude
         return [e[0] for e in sorted(zscores, key=lambda x: x[1]*x[1])]
 
     def cycle_state_variable(self, step):
@@ -141,11 +140,11 @@ class PointDetection:
                 continue
 
             # Color current facelet point differently
-            text_color = Constants.BLUE if facelet == self.facelets[self.curr_facelet_index] else Constants.GREEN
+            text_color = Constants.HSV_BLUE if facelet == self.facelets[self.curr_facelet_index] else Constants.HSV_GREEN
             x, y, window_num = int(point[0]), int(point[1]), point[2]-1
 
             if ret[window_num]:     # If this window is active
-                value = self.get_color(frames[window_num][y, x])
+                value = self.get_color(frames[window_num][y, x])[0]
                 if ColorData.NULL_COLOR in value:
                     self.isCompleteCube = False
                 self.colors_state[facelet] = value
@@ -159,9 +158,9 @@ class PointDetection:
         # Show name of current facelet
         draw_set.append((Constants.ALL_WINDOWS,
                         (self.facelets[self.curr_facelet_index], (580, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.3,
-                            Constants.BLUE if all_points_set
-                            else Constants.GREEN if self.points[self.facelets[self.curr_facelet_index]]
-                            else Constants.RED),
+                            Constants.HSV_BLUE if all_points_set
+                            else Constants.HSV_GREEN if self.points[self.facelets[self.curr_facelet_index]]
+                            else Constants.HSV_RED),
                          None
                          ))
         return draw_set
@@ -188,17 +187,17 @@ class PointDetection:
             if ret[window_num]:     # If this window is active
                 value = frames[window_num][y, x]
 
-                if not set_size:    # No elements registered to the color set yet
+                if not set_size > 0:    # No elements registered to the color set yet
                     mean = value
                     variance = np.zeros(3)
                     set_size += 1
                 else:   # There are elements registered, update statistical data
-                    new_mean = (value + mean*set_size)/(set_size + 1)
-                    if set_size>2:
+                    new_mean = value/(set_size+1) + mean*set_size/(set_size+1)
+                    if set_size > 1:
                         variance = (((set_size-1)*variance) + (value-mean)*(value-new_mean)) / set_size
-                    else:   # Only occurs when set_size = 2
+                    else:   # Only occurs when (set_size + 1) = 2 (two elements now in set)
                         # Initialize variance calculation for 2 data points
-                        variance = ((value-mean) ** 2 + (value-new_mean) ** 2)
+                        variance = ((mean-new_mean) ** 2 + (value-new_mean) ** 2)
                     mean = new_mean
                     stddev = np.sqrt(variance)
                     set_size += 1
@@ -211,7 +210,7 @@ class PointDetection:
 
         # Default average color to RED (wont affect actual average, just the text color)
         if mean is None:
-            mean = np.array(list(Constants.RED))
+            mean = np.array(list(Constants.HSV_RED))
 
         # Add the face name to the draw set (colored to the average)
         draw_set.append((Constants.ALL_WINDOWS,
@@ -219,6 +218,21 @@ class PointDetection:
                           (40,40), cv2.FONT_HERSHEY_SIMPLEX, .5, [e.item() for e in mean]),
                          ((25,35), 3, [e.item() for e in mean], 5)
                          ))
+
+        samples_text = ""
+        text_color = Constants.HSV_RED
+        if not set_size:
+            samples_text = "No color samples registered"
+        elif set_size < 3:
+            samples_text = "Please give at least 3 samples: {}".format(set_size)
+            text_color = Constants.HSV_MAGENTA
+        else:
+            samples_text = "Samples: {}".format(set_size)
+            text_color = Constants.HSV_BLUE
+        draw_set.append((Constants.ALL_WINDOWS,
+                         (samples_text, (20, 65), cv2.FONT_HERSHEY_SIMPLEX, .5, text_color),
+                         None))
+
         return draw_set
 
     def on_mouse(self, event, x, y, flags, window_num):

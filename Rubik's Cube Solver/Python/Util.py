@@ -20,34 +20,9 @@ def draw_points(frames, draw_set):
                 cv2.circle(frames[window_num], *circle_params)
 
 
-def bgr_to_hsv(color):
-    _b = color[0]/255
-    _g = color[1]/255
-    _r = color[2]/255
-    c_max = max([_b,_g,_r])
-    c_min = min([_b,_g,_r])
-    delta = c_max-c_min
-
-    h = 0
-    if delta is not 0:
-        if c_max is _r: h = 60 * (((_g - _b)/delta) % 6)
-        if c_max is _g: h = 60 * (((_b - _r)/delta) + 2)
-        if c_max is _b: h = 60 * (((_r - _g)/delta) + 4)
-    s = 0 if c_max is 0 else delta/c_max
-    v = c_max
-    return (h,s,v)
-
-
-def color_distance(a, b):
-    return np.linalg.norm(
-        a/np.linalg.norm(a)
-        - b/np.linalg.norm(b)
-    )
-
-
 def zscore(mean, stddev, sample):
     return np.linalg.norm(
-        (sample - mean)/stddev
+        np.abs(((sample - mean)/stddev)[0:2])   # Take only hue and saturation
     )
 
 
@@ -56,15 +31,9 @@ def generate_keys():
     facelets = []
     for face in faces:
         for i in range(1,10):
-            facelets.append(face+str(i))
+            if i is not 5:  # Don't include the center face
+                facelets.append(face+str(i))
     return facelets, faces
-
-
-# def check_file(filename):
-#     try:
-#         f = open(filename)
-#     except IOError:
-#
 
 
 def read_file(filename):

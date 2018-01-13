@@ -12,6 +12,8 @@ cube = RubiksCube()
 
 # videoman.add_pre_processor(np.flipud, 1)
 videoman.add_pre_processor(np.fliplr, Constants.ALL_WINDOWS)
+videoman.add_pre_processor(cv2.cvtColor, Constants.ALL_WINDOWS, cv2.COLOR_BGR2HSV)
+videoman.add_post_processor(cv2.cvtColor, Constants.ALL_WINDOWS, cv2.COLOR_HSV2BGR)
 
 def parse_keyboard(key_stroke):
     if key_stroke == ord('w'):
